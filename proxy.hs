@@ -2,15 +2,14 @@
 
 import Control.Concurrent
 import Network.Socket hiding (send, recv)
-import Control.Monad (forever)
+import Control.Monad (forever, unless)
 import Prelude hiding (getContents)
 import Network.Socket.ByteString
-import Data.ByteString.UTF8 (fromString, toString)
+import Data.ByteString.UTF8 (fromString)
 import qualified Data.ByteString as BS
 import Text.Printf
 import HTTP
 import qualified Control.Concurrent.Thread.Group as TG
-import Control.Monad (unless)
 import Data.List
 
 bufferSize = 2^18
@@ -35,7 +34,7 @@ worker c remote = do
       worker c remote
 
 handleRequest :: HTTPRequest -> Socket -> IO ()
-handleRequest req c = do
+handleRequest req c = 
     case lookup "Host" (httpHeaders req) of
         Nothing -> do
             printf "No host found, closing...\n" -- 502
@@ -65,7 +64,7 @@ handleRequest req c = do
 
 handleSocket :: HTTPRequest -> Socket -> Socket -> IO ()
 handleSocket req s c = do
-    i <- send s $ fromString $ show (trim req) -- check output, trim req
+    send s $ fromString $ show (trim req) -- check output, trim req
     transfer
     where
         transfer = do
@@ -73,14 +72,14 @@ handleSocket req s c = do
             if BS.null b then
                 close s
             else do
-                n <- send c b
+                send c b
                 transfer
 
 handleConnect :: Socket -> Socket -> BS.ByteString -> IO ()
 handleConnect s c rem = do
   g <- TG.new
-  send c $ "HTTP/1.1 200 Ok\r\n\r\n"
-  send s $ rem
+  send c "HTTP/1.1 200 Ok\r\n\r\n"
+  send s rem
   (t1, _) <- TG.forkIO g $ transfer s c
   (t2, _) <- TG.forkIO g $ transfer c s
   TG.waitN 1 g
