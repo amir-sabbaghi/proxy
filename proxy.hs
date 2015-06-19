@@ -11,6 +11,7 @@ import qualified Control.Concurrent.Thread.Group as TG
 import Control.Exception
 import Text.Printf
 import Data.List
+import Data.CaseInsensitive (mk)
 
 import Server
 import HTTPWorker
@@ -79,7 +80,7 @@ trim (HTTPRequest m p v h b) = HTTPRequest m path v headers b
     where
         path = trimPath p
         headers = trimHeaders h
-        trimPath p = if "http" `isPrefixOf` p then
+        trimPath p = if "http" == mk (take 4 p) then
                        dropWhile (/= '/') $ drop 7 p
                      else
                        p
