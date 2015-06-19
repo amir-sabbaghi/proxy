@@ -1,3 +1,4 @@
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 import Control.Concurrent
@@ -6,8 +7,9 @@ import Control.Monad (unless)
 import Network.Socket.ByteString
 import Data.ByteString.UTF8 (fromString)
 import qualified Data.ByteString as BS
-import Text.Printf
 import qualified Control.Concurrent.Thread.Group as TG
+import Control.Exception
+import Text.Printf
 import Data.List
 
 import Server
@@ -29,12 +31,12 @@ handleRequest req cSend cRecv =
                  else
                    tail port'
       s <- socket AF_INET Stream defaultProtocol
-      addr <- getAddrInfo Nothing (Just host) (Just port)
+      addr <- try $ getAddrInfo Nothing (Just host) (Just port)
       case addr of
-          [] -> do
+          Left (_ :: IOException) -> do
             cSend "HTTP/1.1 502 Bad Gateway\r\n\r\n"
             printf "Could not resolve address: %s\n" host
-          (a:_) -> do
+          Right (a:_) -> do
             connect s $ addrAddress a
             case httpMethod req of
               "CONNECT" -> do
