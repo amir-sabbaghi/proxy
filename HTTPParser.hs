@@ -1,8 +1,8 @@
-module HTTP ( HTTPRequest (..)
-            , parseHTTP
-            , parse
-            , httpParser
-            ) where
+module HTTPParser ( HTTPRequest (..)
+                  , parseHTTP
+                  , parse
+                  , httpParser
+                  ) where
 
 import Text.Parsec
 import Text.Parsec.ByteString
@@ -35,11 +35,9 @@ httpParser = do
     crlf
     headers <- many headerParser
     crlf
-    body <- case method of
-                 "CONNECT" -> getInput
-                 _ -> case lookup "Content-Size" headers of
-                           Nothing -> return empty
-                           Just sz -> getInput
+    body <- case lookup "Content-Size" headers of
+      Nothing -> return empty
+      Just sz -> getInput
     return (HTTPRequest method path version headers body)
 
 methodParser :: Parser String
