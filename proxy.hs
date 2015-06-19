@@ -2,8 +2,7 @@
 
 import Control.Concurrent
 import Network.Socket hiding (send, recv)
-import Control.Monad (forever, unless)
-import Prelude hiding (getContents)
+import Control.Monad (unless)
 import Network.Socket.ByteString
 import Data.ByteString.UTF8 (fromString)
 import qualified Data.ByteString as BS
@@ -77,7 +76,7 @@ trim :: HTTPRequest -> HTTPRequest
 trim (HTTPRequest m p v h b) = HTTPRequest m path v headers b
     where
         path = trimPath p
-        headers = trimHeaders h ++ [("Connection", "close")]
+        headers = trimHeaders h
         trimPath p = if "http" `isPrefixOf` p then
                        dropWhile (/= '/') $ drop 7 p
                      else
