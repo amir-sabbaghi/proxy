@@ -89,7 +89,7 @@ trim :: HTTPRequest -> HTTPRequest
 trim (HTTPRequest m p v h b) = HTTPRequest m path v headers b
     where
         path = trimPath p
-        headers = trimHeaders h
+        headers = trimHeaders h ++ [("Connection", "Keep-Alive")]
         trimPath p = if "http" == mk (take 4 p) then
                        dropWhile (/= '/') $ drop 7 p
                      else
