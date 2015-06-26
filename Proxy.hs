@@ -31,8 +31,14 @@ handleRequest req cSend cRecv openSockets =
     Just h  -> do
       case find (\(a, _, _) -> a == h) openSockets of
        Just (h, s, tid) -> do
-         send s $ fromString $ show (trim req) -- check output, trim req
-         return openSockets
+         isR <- isReadable s
+         if isR then do
+           send s $ fromString $ show (trim req) -- check output, trim req
+           return $ (h, s, tid):filter (\(a, _, _) -> a /= h) openSockets
+         else do
+           close s
+           killThread tid
+           handleRequest req cSend cRecv $ filter (\(a, _, _) -> a /= h) openSockets
        Nothing -> do
          let (host, port') = break (== ':') h
              port = if null port' then
