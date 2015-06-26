@@ -17,37 +17,47 @@ import Server
 import HTTPWorker
 import HTTPParser
 
-main = server defaultSettings.httpWorker handleRequest $ ()
+type State = (String, Socket, ThreadId)
 
-handleRequest :: HTTPRequest -> Send -> Recv -> () -> IO ()
-handleRequest req cSend cRecv _ =
+main = server defaultSettings.httpWorker handleRequest $ []
+
+handleRequest :: HTTPRequest -> Send -> Recv -> [State] -> IO [State]
+handleRequest req cSend cRecv openSockets =
   case lookup "Host" (httpHeaders req) of
     Nothing -> do
       cSend "HTTP/1.1 502 Bad Gateway\r\n\r\n"
       printf "Host not found in headers\n"
+      return openSockets
     Just h  -> do
-      let (host, port') = break (== ':') h
-          port = if null port' then
-                   "80"
-                 else
-                   tail port'
-      s <- socket AF_INET Stream defaultProtocol
-      addr <- try $ getAddrInfo Nothing (Just host) (Just port)
-      case addr of
-          Left (_ :: IOException) -> do
-            cSend "HTTP/1.1 502 Bad Gateway\r\n\r\n"
-            printf "Could not resolve address: %s\n" host
-          Right (a:_) -> do
-            connect s $ addrAddress a
-            case httpMethod req of
-              "CONNECT" -> do
-                putStrLn $ "CONNECT " ++ h
-                handleConnect cSend cRecv (send s) (recv s (2^18))
-                close s
-              _ -> do
-                putStrLn $ httpMethod req ++ " " ++ httpPath req
-                handleSocket req cSend (send s) (recv s (2^18))
-                close s
+      case find (\(a, _, _) -> a == h) openSockets of
+       Just (h, s, tid) -> do
+         send s $ fromString $ show (trim req) -- check output, trim req
+         return openSockets
+       Nothing -> do
+         let (host, port') = break (== ':') h
+             port = if null port' then
+                      "80"
+                    else
+                      tail port'
+         s <- socket AF_INET Stream defaultProtocol
+         addr <- try $ getAddrInfo Nothing (Just host) (Just port)
+         case addr of
+             Left (_ :: IOException) -> do
+               cSend "HTTP/1.1 502 Bad Gateway\r\n\r\n"
+               printf "Could not resolve address: %s\n" host
+               return openSockets
+             Right (a:_) -> do
+               connect s $ addrAddress a
+               case httpMethod req of
+                 "CONNECT" -> do
+                   putStrLn $ "CONNECT " ++ h
+                   handleConnect cSend cRecv (send s) (recv s (2^18))
+                   close s
+                   return openSockets
+                 _ -> do
+                   putStrLn $ httpMethod req ++ " " ++ httpPath req
+                   tid <- forkIO $ handleSocket req cSend (send s) (recv s (2^18))
+                   return $ (h, s, tid):openSockets
 
 handleSocket :: HTTPRequest -> Send -> Send -> Recv -> IO ()
 handleSocket req cSend sSend sRecv = do
