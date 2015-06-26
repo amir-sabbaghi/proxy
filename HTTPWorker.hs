@@ -6,15 +6,16 @@ import HTTPParser
 import qualified Data.ByteString as BS
 import Control.Monad (unless)
 
-type RequestHandler = HTTPRequest -> Send -> Recv -> IO ()
+type RequestHandler a = HTTPRequest -> Send -> Recv -> a -> IO a
 
-httpWorker :: RequestHandler -> Worker
-httpWorker handler send recv = do
+httpWorker :: RequestHandler a -> a -> Worker
+httpWorker handler state send recv = do
   packet <- recv
   unless (BS.null packet) $ do
-    case parseHTTP packet of
-     Nothing  -> do
-       putStrLn $ "[Error] Unrecognized HTTP request:"
-       putStrLn $ show packet
-     Just req -> handler req send recv
-    httpWorker handler send recv
+    news <- case parseHTTP packet of
+      Nothing  -> do
+        putStrLn $ "[Error] Unrecognized HTTP request:"
+        putStrLn $ show packet
+        return state
+      Just req -> handler req send recv state
+    httpWorker handler news send recv

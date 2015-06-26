@@ -17,10 +17,10 @@ import Server
 import HTTPWorker
 import HTTPParser
 
-main = server defaultSettings.httpWorker $ handleRequest
+main = server defaultSettings.httpWorker handleRequest $ ()
 
-handleRequest :: HTTPRequest -> Send -> Recv -> IO ()
-handleRequest req cSend cRecv =
+handleRequest :: HTTPRequest -> Send -> Recv -> () -> IO ()
+handleRequest req cSend cRecv _ =
   case lookup "Host" (httpHeaders req) of
     Nothing -> do
       cSend "HTTP/1.1 502 Bad Gateway\r\n\r\n"
