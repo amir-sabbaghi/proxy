@@ -1,4 +1,5 @@
 module HTTPWorker ( httpWorker
+                  , RequestHandler
                   ) where
 
 import Server
