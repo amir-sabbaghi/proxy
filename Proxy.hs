@@ -21,20 +21,20 @@ type State = (String, Socket, ThreadId)
 
 main = server defaultSettings.httpWorker handleRequest $ []
 
-handleRequest :: HTTPRequest -> Send -> Recv -> [State] -> IO [State]
+handleRequest :: HTTPRequest -> Send -> Recv -> [State] -> IO (Bool, [State])
 handleRequest req cSend cRecv openSockets =
   case lookup "Host" (httpHeaders req) of
     Nothing -> do
       cSend "HTTP/1.1 502 Bad Gateway\r\n\r\n"
       printf "Host not found in headers\n"
-      return openSockets
+      return (True, openSockets)
     Just h  -> do
       case find (\(a, _, _) -> a == h) openSockets of
        Just (h, s, tid) -> do
          isR <- isReadable s
          if isR then do
            send s $ fromString $ show (trim req) -- check output, trim req
-           return $ (h, s, tid):filter (\(a, _, _) -> a /= h) openSockets
+           return (True, (h, s, tid):filter (\(a, _, _) -> a /= h) openSockets)
          else do
            close s
            killThread tid
@@ -51,7 +51,7 @@ handleRequest req cSend cRecv openSockets =
              Left (_ :: IOException) -> do
                cSend "HTTP/1.1 502 Bad Gateway\r\n\r\n"
                printf "Could not resolve address: %s\n" host
-               return openSockets
+               return (True, openSockets)
              Right (a:_) -> do
                connect s $ addrAddress a
                case httpMethod req of
@@ -59,11 +59,11 @@ handleRequest req cSend cRecv openSockets =
                    putStrLn $ "CONNECT " ++ h
                    handleConnect cSend cRecv (send s) (recv s (2^18))
                    close s
-                   return openSockets
+                   return (False, openSockets)
                  _ -> do
                    putStrLn $ httpMethod req ++ " " ++ httpPath req
                    tid <- forkIO $ handleSocket req cSend (send s) (recv s (2^18))
-                   return $ (h, s, tid):openSockets
+                   return (True, (h, s, tid):openSockets)
 
 handleSocket :: HTTPRequest -> Send -> Send -> Recv -> IO ()
 handleSocket req cSend sSend sRecv = do
