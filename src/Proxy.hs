@@ -80,7 +80,7 @@ handleSocket req cSend sSend sRecv = do
 handleConnect :: Send -> Recv -> Send -> Recv -> IO ()
 handleConnect cSend cRecv sSend sRecv = do
   g <- TG.new
-  cSend "HTTP/1.1 200 Ok\r\nProxy-Connection: Close\r\n\r\n"
+  cSend "HTTP/1.1 200 Ok\r\nConnection: Close\r\n\r\n"
   (t1, _) <- TG.forkIO g $ transfer sSend cRecv
   (t2, _) <- TG.forkIO g $ transfer cSend sRecv
   TG.waitN 1 g
