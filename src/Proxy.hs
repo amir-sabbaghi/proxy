@@ -1,6 +1,9 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 
+module Proxy ( handleRequest
+             ) where
+
 import Control.Concurrent
 import Network.Socket hiding (send, recv)
 import Control.Monad (unless)
@@ -18,8 +21,6 @@ import HTTPWorker
 import HTTPParser
 
 type State = (String, Socket, ThreadId)
-
-main = server defaultSettings.httpWorker handleRequest $ []
 
 handleRequest :: HTTPRequest -> Send -> Recv -> [State] -> IO (Bool, [State])
 handleRequest req cSend cRecv openSockets =
