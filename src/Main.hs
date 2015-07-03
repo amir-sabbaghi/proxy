@@ -33,7 +33,7 @@ main = do
             handleRequest
         else
             proxyAuth (authentication settings) (realm settings) handleRequest
-    S.server servSett.httpWorker handler $ []
+    S.server servSett.httpWorker handler $ (Nothing, [])
 
 parseArgs :: [String] -> Settings -> Settings
 parseArgs [] s = s
