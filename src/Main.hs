@@ -17,7 +17,7 @@ data Settings = Settings { bindAddress :: String
 defaultSettings :: Settings
 defaultSettings = Settings { bindAddress = "0.0.0.0"
                            , port = 8080
-                           , bufferSize = 2^18
+                           , bufferSize = 2^11
                            , authentication = ""
                            , realm = ""
                            }

@@ -8,11 +8,11 @@ module Server ( Send
 
 import Data.ByteString
 import Network.Socket hiding (send, recv)
-import Network.Socket.ByteString (send, recv)
+import Network.Socket.ByteString (sendAll, recv)
 import Control.Monad (forever)
 import Control.Concurrent
 
-type Send = ByteString -> IO Int
+type Send = ByteString -> IO ()
 type Recv = IO ByteString
 type Worker = Send -> Recv -> IO ()
 
@@ -37,7 +37,7 @@ server (Settings bindAddr port bufferSize) worker = do
   forever $ do
     (c, remote) <- accept s
     forkIO $ do
-      let snd = send c
+      let snd = sendAll c
       let rcv = recv c bufferSize
       worker snd rcv
       close c

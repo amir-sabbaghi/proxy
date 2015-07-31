@@ -37,7 +37,7 @@ handleRequest req cSend cRecv (Nothing, openSockets) =
        Just (h, s) -> do
          isR <- isReadable s
          if isR then do
-           tid <- forkIO $ handleSocket req cSend (send s) (recv s (2^18))
+           tid <- forkIO $ handleSocket req cSend (sendAll s) (recv s (2^11))
            return (True, (Just tid, (h, s):filter (\(a, _) -> a /= h) openSockets))
          else do
            close s
@@ -60,12 +60,12 @@ handleRequest req cSend cRecv (Nothing, openSockets) =
                case httpMethod req of
                  "CONNECT" -> do
                    putStrLn $ "CONNECT " ++ h
-                   handleConnect cSend cRecv (send s) (recv s (2^18))
+                   handleConnect cSend cRecv (sendAll s) (recv s (2^11))
                    close s
                    return (False, (Nothing, openSockets))
                  _ -> do
                    putStrLn $ httpMethod req ++ " " ++ httpPath req
-                   tid <- forkIO $ handleSocket req cSend (send s) (recv s (2^18))
+                   tid <- forkIO $ handleSocket req cSend (sendAll s) (recv s (2^11))
                    return (True, (Just tid, (h, s):openSockets))
 
 handleSocket :: HTTPRequest -> Send -> Send -> Recv -> IO ()
