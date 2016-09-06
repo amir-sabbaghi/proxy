@@ -12,6 +12,9 @@ data Settings = Settings { bindAddress :: String
                          , bufferSize :: Int
                          , authentication :: String
                          , realm :: String
+                         , https :: Bool
+                         , cert :: String
+                         , key :: String
                          } deriving (Show)
 
 defaultSettings :: Settings
@@ -20,6 +23,9 @@ defaultSettings = Settings { bindAddress = "0.0.0.0"
                            , bufferSize = 2^11
                            , authentication = ""
                            , realm = ""
+                           , https = False
+                           , cert = "cert.pem"
+                           , key = "key.pem"
                            }
 
 main = do
@@ -28,6 +34,9 @@ main = do
     let servSett = S.defaultSettings { S.bindAddress = bindAddress settings
                                      , S.port = port settings
                                      , S.bufferSize = bufferSize settings
+                                     , S.https = https settings
+                                     , S.cert = cert settings
+                                     , S.key = key settings
                                      }
     let handler = if null (authentication settings) then
             handleRequest
