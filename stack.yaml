@@ -1,6 +1,30 @@
-resolver: lts-6.14
+resolver: ghc-7.8.4
 packages:
 - '.'
-extra-deps: []
-flags: {}
+extra-deps:
+  - base64-string-0.2
+  - case-insensitive-1.2.0.7
+  - network-2.6.3.1
+  - network-simple-0.4.0.5
+  - parsec-3.1.11
+  - threads-0.5.1.4
+  - utf8-string-1.0.1.1
+  - exceptions-0.8.3
+  - hashable-1.2.4.0
+  - mtl-2.2.1
+  - semigroups-0.18.2
+  - stm-2.4.4.1
+  - text-1.2.2.1
+    #- bytestring-builder-0.10.8.1.0
+  - bytestring-0.10.8.1
+  - binary-0.8.4.1
+  - unix-2.7.2.0
+  - nats-1.1.1
+  - tagged-0.8.5
+  - unordered-containers-0.2.7.1
+  - transformers-compat-0.5.1.4
+  - transformers-0.5.2.0
+flags:
+  semigroups:
+    bytestring-builder: false
 extra-package-dbs: []

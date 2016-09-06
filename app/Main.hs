@@ -8,7 +8,7 @@ import Proxy
 import ProxyAuth
 
 data Settings = Settings { bindAddress :: String
-                         , port :: S.PortNumber
+                         , port :: String
                          , bufferSize :: Int
                          , authentication :: String
                          , realm :: String
@@ -16,7 +16,7 @@ data Settings = Settings { bindAddress :: String
 
 defaultSettings :: Settings
 defaultSettings = Settings { bindAddress = "0.0.0.0"
-                           , port = 8080
+                           , port = "8080"
                            , bufferSize = 2^11
                            , authentication = ""
                            , realm = ""
@@ -43,7 +43,7 @@ parseArgs ("-a":as) s = parseArgs ("--auth":as) s
 
 parseArgs ("--port":as) s = case as of
     [] -> error "Please specify port number in front of --port"
-    (p:as) -> parseArgs as $ s { port = fromInteger $ read p }
+    (p:as) -> parseArgs as $ s { port = p }
 
 parseArgs ("--bindaddr":as) s = case as of
     [] -> error "Please specify bind address in front of --bindaddr"
