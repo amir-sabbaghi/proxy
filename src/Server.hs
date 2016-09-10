@@ -29,8 +29,10 @@ type Worker = Send -> Recv -> IO ()
 
 data Settings = Settings { bindAddress :: String
                          , port        :: String
+                         , bufferSize  :: Int
                          , cert        :: String
                          , key         :: String
+                         , https       :: Bool
                          } deriving (Show)
 
 defaultSettings :: Settings
@@ -39,10 +41,11 @@ defaultSettings = Settings { bindAddress = "0.0.0.0"
                            , bufferSize  = 2^18
                            , cert        = "cert.pem"
                            , key         = "key.pem"
+                           , https       = True
                            }
 
 server :: Settings -> Worker -> IO ()
-server (Settings bindAddr port bufferSize cert key) worker =
+server (Settings bindAddr port _ cert key True) worker =
   do
     chain <- credentialLoadX509 cert key
 
@@ -55,7 +58,7 @@ server (Settings bindAddr port bufferSize cert key) worker =
                      , serverDebug = def
                      } :: ServerParams
 
-    print $ "Listening on port " ++ port
+    print $ "[HTTPS] Listening on port " ++ port
 
     serve HostAny port $ \(socket, remoteAddr) -> do
       ctx <- contextNew socket params
@@ -67,5 +70,19 @@ server (Settings bindAddr port bufferSize cert key) worker =
       worker write rcv `catch` \e -> print (e :: SomeException)
 
       bye ctx
+
+    return ()
+
+server (Settings bindAddr port bufferSize cert key False) worker =
+  do
+    print $ "Listening on port " ++ port
+
+    serve HostAny port $ \(socket, remoteAddr) -> do
+      let write = send socket
+          rcv = do
+            d <- Network.Simple.TCP.recv socket bufferSize
+            return $ fromMaybe empty d 
+
+      worker write rcv `catch` \e -> print (e :: SomeException)
 
     return ()

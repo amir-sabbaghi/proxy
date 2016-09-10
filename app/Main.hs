@@ -7,28 +7,36 @@ import HTTPWorker
 import Proxy
 import ProxyAuth
 
-data Settings = Settings { bindAddress :: String
-                         , port :: String
+data Settings = Settings { bindAddress    :: String
+                         , port           :: String
+                         , bufferSize     :: Int
                          , authentication :: String
-                         , realm :: String
-                         , cert :: String
-                         , key :: String
+                         , realm          :: String
+                         , cert           :: String
+                         , key            :: String
+                         , https          :: Bool
                          } deriving (Show)
 
 defaultSettings :: Settings
 defaultSettings = Settings { bindAddress    = "0.0.0.0"
                            , port           = "8080"
+                           , bufferSize     = 2^18
                            , authentication = ""
                            , realm          = ""
                            , cert           = "cert.pem"
                            , key            = "key.pem"
+                           , https          = False
                            }
 
 main = do
     args <- getArgs
     let settings = parseArgs args defaultSettings
     let servSett = S.defaultSettings { S.bindAddress = bindAddress settings
-                                     , S.port = port settings
+                                     , S.port        = port settings
+                                     , S.bufferSize  = bufferSize settings
+                                     , S.cert        = cert settings
+                                     , S.key         = key settings
+                                     , S.https       = https settings
                                      }
     let handler = if null (authentication settings) then
             handleRequest
