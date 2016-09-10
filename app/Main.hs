@@ -42,6 +42,10 @@ main = do
            print "You must specify --key and --cert for https to work"
            exitFailure
 
+    when ((isNothing . http) settings && (isNothing . https) settings) $ do
+      print "You must specify at least one of --http or --https parameters"
+      exitFailure
+
     let handler = if null (authentication settings) then
             handleRequest
         else
