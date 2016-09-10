@@ -24,7 +24,7 @@ instance Default Settings where
                  , authentication = ""
                  , realm          = ""
                  , https          = Nothing
-                 , http           = Just (S.HTTP "8080")
+                 , http           = Nothing
                  }
 
 main = do
@@ -68,11 +68,11 @@ parseArgs ("--realm":as) s = case as of
 
 parseArgs ("--http":as) s = case as of
     [] -> error "Please specify http port in front of --http"
-    (r:as) -> parseArgs as $ s { http = Just ((fromJust $ http s) { S.httpPort = r }) }
+    (r:as) -> parseArgs as $ s { http = Just (def { S.httpPort = r }) }
 
 parseArgs ("--https":as) s = case as of
     [] -> error "Please specify https port in front of --https"
-    (r:as) -> parseArgs as $ s { https = Just (def S.HTTPS { S.httpsPort = r }) }
+    (r:as) -> parseArgs as $ s { https = Just (def { S.httpsPort = r }) }
 
 parseArgs ("--cert":as) s = case as of
     [] -> error "Please specify certificate path in front of --cert"
