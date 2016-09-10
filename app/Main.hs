@@ -65,3 +65,5 @@ parseArgs ("--auth":as) s = case as of
 parseArgs ("--realm":as) s = case as of
     [] -> error "Please specify realm in front of --realm"
     (r:as) -> parseArgs as $ s { realm = r }
+
+parseArgs ("--https":as) s = parseArgs as $ s { https = True }
