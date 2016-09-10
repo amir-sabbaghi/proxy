@@ -8,6 +8,8 @@ import Proxy
 import ProxyAuth
 import Data.Default.Class
 import Data.Maybe
+import System.Exit
+import Control.Monad
 
 data Settings = Settings { bindAddress    :: String
                          , bufferSize     :: Int
@@ -33,6 +35,12 @@ main = do
                        , S.http        = http settings
                        , S.https       = https settings
                        } :: S.ServerSettings
+
+    when ((isJust . https) settings &&
+         ((null . S.key . fromJust . https) settings ||
+          (null . S.cert . fromJust . https) settings)) $ do
+           print "You must specify --key and --cert for https to work"
+           exitFailure
 
     let handler = if null (authentication settings) then
             handleRequest

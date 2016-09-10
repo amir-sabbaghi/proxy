@@ -20,16 +20,11 @@ import Control.Exception
 import Network.Simple.TCP
 import Control.Concurrent
 import qualified Control.Concurrent.Thread.Group as TG
-import System.Exit
 
 import Network.TLS
 import Network.TLS.Extra.Cipher
 import Data.X509
 import Data.Default.Class
-
-die message = do
-  print message
-  exitFailure
 
 type Send = ByteString -> IO ()
 type Recv = IO ByteString
@@ -45,8 +40,8 @@ data HTTPS = HTTPS { httpsPort :: String
                    } deriving (Show)
 instance Default HTTPS where
   def = HTTPS { httpsPort = "8081"
-              , cert = seq (die "You must specify certificate file") ""
-              , key  = seq (die "You must specify key file") ""
+              , cert = ""
+              , key  = ""
               }
 
 
