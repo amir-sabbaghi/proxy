@@ -2,8 +2,9 @@
 module Server ( Send
               , Recv
               , Worker
-              , Settings (..)
-              , defaultSettings
+              , ServerSettings (..)
+              , HTTP (..)
+              , HTTPS (..)
               , server
               ) where
 
@@ -17,35 +18,60 @@ import Control.Monad (forever)
 import Control.Concurrent
 import Control.Exception
 import Network.Simple.TCP
+import Control.Concurrent
+import qualified Control.Concurrent.Thread.Group as TG
+import System.Exit
 
 import Network.TLS
 import Network.TLS.Extra.Cipher
 import Data.X509
 import Data.Default.Class
 
+die message = do
+  print message
+  exitFailure
+
 type Send = ByteString -> IO ()
 type Recv = IO ByteString
 type Worker = Send -> Recv -> IO ()
 
-data Settings = Settings { bindAddress :: String
-                         , port        :: String
-                         , bufferSize  :: Int
-                         , cert        :: String
-                         , key         :: String
-                         , https       :: Bool
-                         } deriving (Show)
+data HTTP = HTTP { httpPort :: String } deriving (Show)
+instance Default HTTP where
+  def = HTTP { httpPort = "8080" }
 
-defaultSettings :: Settings
-defaultSettings = Settings { bindAddress = "0.0.0.0"
-                           , port        = "3000"
-                           , bufferSize  = 2^18
-                           , cert        = "cert.pem"
-                           , key         = "key.pem"
-                           , https       = True
-                           }
+data HTTPS = HTTPS { httpsPort :: String
+                   , cert :: String
+                   , key  :: String
+                   } deriving (Show)
+instance Default HTTPS where
+  def = HTTPS { httpsPort = "8081"
+              , cert = seq (die "You must specify certificate file") ""
+              , key  = seq (die "You must specify key file") ""
+              }
 
-server :: Settings -> Worker -> IO ()
-server (Settings bindAddr port _ cert key True) worker =
+
+data ServerSettings = ServerSettings { bindAddress :: String
+                                     , bufferSize  :: Int
+                                     , http        :: Maybe HTTP
+                                     , https       :: Maybe HTTPS
+                                     } deriving (Show)
+instance Default ServerSettings where
+  def = ServerSettings { bindAddress = "0.0.0.0"
+                       , bufferSize  = 2^18
+                       , http        = Nothing
+                       , https       = Nothing
+                       }
+
+
+server :: ServerSettings -> Worker -> IO ()
+server (ServerSettings bindAddr bufferSize (Just http) (Just https)) worker =
+  do
+    g <- TG.new
+    TG.forkIO g $ server (ServerSettings bindAddr bufferSize (Just http) Nothing) worker
+    TG.forkIO g $ server (ServerSettings bindAddr bufferSize Nothing (Just https)) worker
+    TG.waitN 2 g
+
+server (ServerSettings bindAddr _ _ (Just (HTTPS port cert key))) worker =
   do
     chain <- credentialLoadX509 cert key
 
@@ -73,7 +99,7 @@ server (Settings bindAddr port _ cert key True) worker =
 
     return ()
 
-server (Settings bindAddr port bufferSize cert key False) worker =
+server (ServerSettings bindAddr bufferSize (Just (HTTP port)) _) worker =
   do
     print $ "Listening on port " ++ port
 

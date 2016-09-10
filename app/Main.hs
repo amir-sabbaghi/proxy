@@ -6,38 +6,34 @@ import qualified Network.Socket as S
 import HTTPWorker
 import Proxy
 import ProxyAuth
+import Data.Default.Class
+import Data.Maybe
 
 data Settings = Settings { bindAddress    :: String
-                         , port           :: String
                          , bufferSize     :: Int
                          , authentication :: String
                          , realm          :: String
-                         , cert           :: String
-                         , key            :: String
-                         , https          :: Bool
+                         , https          :: Maybe S.HTTPS
+                         , http           :: Maybe S.HTTP
                          } deriving (Show)
-
-defaultSettings :: Settings
-defaultSettings = Settings { bindAddress    = "0.0.0.0"
-                           , port           = "8080"
-                           , bufferSize     = 2^18
-                           , authentication = ""
-                           , realm          = ""
-                           , cert           = "cert.pem"
-                           , key            = "key.pem"
-                           , https          = False
-                           }
+instance Default Settings where
+  def = Settings { bindAddress    = "0.0.0.0"
+                 , bufferSize     = 2^18
+                 , authentication = ""
+                 , realm          = ""
+                 , https          = Nothing
+                 , http           = Just (S.HTTP "8080")
+                 }
 
 main = do
     args <- getArgs
-    let settings = parseArgs args defaultSettings
-    let servSett = S.defaultSettings { S.bindAddress = bindAddress settings
-                                     , S.port        = port settings
-                                     , S.bufferSize  = bufferSize settings
-                                     , S.cert        = cert settings
-                                     , S.key         = key settings
-                                     , S.https       = https settings
-                                     }
+    let settings = parseArgs args def :: Settings
+    let servSett = def { S.bindAddress = bindAddress settings
+                       , S.bufferSize  = bufferSize settings
+                       , S.http        = http settings
+                       , S.https       = https settings
+                       } :: S.ServerSettings
+
     let handler = if null (authentication settings) then
             handleRequest
         else
@@ -49,10 +45,6 @@ parseArgs [] s = s
 parseArgs ("-p":as) s = parseArgs ("--port":as) s
 parseArgs ("-b":as) s = parseArgs ("--bindaddr":as) s
 parseArgs ("-a":as) s = parseArgs ("--auth":as) s
-
-parseArgs ("--port":as) s = case as of
-    [] -> error "Please specify port number in front of --port"
-    (p:as) -> parseArgs as $ s { port = p }
 
 parseArgs ("--bindaddr":as) s = case as of
     [] -> error "Please specify bind address in front of --bindaddr"
@@ -66,4 +58,18 @@ parseArgs ("--realm":as) s = case as of
     [] -> error "Please specify realm in front of --realm"
     (r:as) -> parseArgs as $ s { realm = r }
 
-parseArgs ("--https":as) s = parseArgs as $ s { https = True }
+parseArgs ("--http":as) s = case as of
+    [] -> error "Please specify http port in front of --http"
+    (r:as) -> parseArgs as $ s { http = Just ((fromJust $ http s) { S.httpPort = r }) }
+
+parseArgs ("--https":as) s = case as of
+    [] -> error "Please specify https port in front of --https"
+    (r:as) -> parseArgs as $ s { https = Just (def S.HTTPS { S.httpsPort = r }) }
+
+parseArgs ("--cert":as) s = case as of
+    [] -> error "Please specify certificate path in front of --cert"
+    (r:as) -> parseArgs as $ s { https = Just ((fromJust $ https s) { S.cert = r }) }
+
+parseArgs ("--key":as) s = case as of
+    [] -> error "Please specify key path in front of --key"
+    (r:as) -> parseArgs as $ s { https = Just ((fromJust $ https s) { S.key = r }) }
