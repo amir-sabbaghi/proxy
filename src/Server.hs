@@ -96,7 +96,7 @@ server (ServerSettings bindAddr _ _ (Just (HTTPS port cert key))) worker =
 
 server (ServerSettings bindAddr bufferSize (Just (HTTP port)) _) worker =
   do
-    print $ "Listening on port " ++ port
+    print $ "[HTTP] Listening on port " ++ port
 
     serve HostAny port $ \(socket, remoteAddr) -> do
       let write = send socket
