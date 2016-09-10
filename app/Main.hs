@@ -9,17 +9,19 @@ import ProxyAuth
 
 data Settings = Settings { bindAddress :: String
                          , port :: String
-                         , bufferSize :: Int
                          , authentication :: String
                          , realm :: String
+                         , cert :: String
+                         , key :: String
                          } deriving (Show)
 
 defaultSettings :: Settings
-defaultSettings = Settings { bindAddress = "0.0.0.0"
-                           , port = "8080"
-                           , bufferSize = 2^11
+defaultSettings = Settings { bindAddress    = "0.0.0.0"
+                           , port           = "8080"
                            , authentication = ""
-                           , realm = ""
+                           , realm          = ""
+                           , cert           = "cert.pem"
+                           , key            = "key.pem"
                            }
 
 main = do
@@ -27,7 +29,6 @@ main = do
     let settings = parseArgs args defaultSettings
     let servSett = S.defaultSettings { S.bindAddress = bindAddress settings
                                      , S.port = port settings
-                                     , S.bufferSize = bufferSize settings
                                      }
     let handler = if null (authentication settings) then
             handleRequest
